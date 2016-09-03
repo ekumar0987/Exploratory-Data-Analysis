@@ -2,7 +2,7 @@
 title: "Health & Economic Impact of Severe Weather Conditions in the United States"
 author: "Eshitha Kumar"
 date: "August 31, 2016"
-output: html_document
+output: word_document
 ---
 
 ##Synopsis 
@@ -17,6 +17,7 @@ Define key questions that would help a government or municipal manager preparing
 ##Data Analysis
 
 __Extract and Load Data__
+
 Load necessary libraries, unzip relevant files and read data into a data frame
 
 ```{r}
@@ -150,18 +151,21 @@ storm_data$Event<-gsub(".*(river|rural flood|small stream flood|urban flood).*",
 ```
 
 __Data Aggregation__
+
 Compute total fatalities, injuries and damage by event type. The data frame is converted into a data table and new columns are created to house aggregate data
 
-```{r}
+```{r, message=FALSE,warning=FALSE}
 library(data.table)
+storm_data <- data.table(storm_data)
 
 #Multiply multiplier for property and crop damage. 
 storm_data <- storm_data[ ,Multiplier:=     
+(
 ifelse(PropertyDamageMultiplier=="k",1000,
 ifelse(PropertyDamageMultiplier=="m",1000000,
-ifelse(PropertyDamageMultiplier=="b",1000000000,NA)))]
+ifelse(PropertyDamageMultiplier=="b",1000000000,NA)))
+)]
 
-storm_data <- data.table(storm_data)
 storm_data <- storm_data[,TotalFatalities:=sum(as.numeric(Fatalities)),by=Event]
 storm_data <- storm_data[,TotalInjuries:=sum(as.numeric(Injuries)), by=Event]
 storm_data <- storm_data[,TotalPropertyDamage:=sum(as.numeric(PropertyDamage)), by=Event]
@@ -170,6 +174,7 @@ storm_data <- storm_data[,TotalCropDamage:=sum(as.numeric(CropDamage)), by=Event
 ```
 
 __Results__
+
 Compute events that led to most damage
 
 ```{r}
@@ -212,3 +217,24 @@ crop_damage <- as.data.frame(crop_damage)
 crop_damage[1:5,1:2]
 ```
 
+__Data Visualization__
+
+```{r}
+library(ggplot2)
+library(grid)
+
+#Use stat=identity so that geom_bar treats data as is, instead of computing counts for bins
+f<-head(fatalities,5)
+
+ggplot(data=f,aes(x=Event, y=TotalFatalities))+geom_bar(stat="identity",color="firebrick",width=0.75)+coord_flip()+xlab("Event")+ylab("Number of Deaths")+ggtitle("Events with Highest Death Rate")+theme(plot.margin = unit(c(2, 2, 2, 2), "cm"))
+
+i<-head(injuries,5)
+ggplot(data=i,aes(Event, TotalInjuries))+geom_bar(stat="identity",color="firebrick",width=0.75)+coord_flip()+xlab("Event")+ylab("Number of Injuries")+ggtitle("Events with Highest Injury Rate")+theme(plot.margin = unit(c(2, 2, 2, 2), "cm"))
+
+pd<-head(property_damage,5)
+ggplot(data=pd,aes(Event, TotalPropertyDamage))+geom_bar(stat="identity",color="firebrick",width=0.75)+coord_flip()+xlab("Event")+ylab("Property Damage in Billion Dollars")+ggtitle("Events with Highest Property Damage")+theme(plot.margin = unit(c(2, 2, 2, 2), "cm"))
+
+cd<-head(crop_damage,5)
+ggplot(data=cd,aes(Event, TotalCropDamage))+geom_bar(stat="identity",color="firebrick",width=0.75)+coord_flip()+xlab("Event")+ylab("Crop Damage in Billion Dollars")+ggtitle("Events with Highest Crop Damage")+theme(plot.margin = unit(c(2, 2, 2, 2), "cm"))
+
+```
